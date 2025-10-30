@@ -1,0 +1,1200 @@
+-- Gbzinn Admin Commands Premium
+-- Versão 2.0 - Com todos os comandos
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local rootPart = character:WaitForChild("HumanoidRootPart")
+
+-- Variáveis de Estado
+local commandStates = {
+    fly = false,
+    noclip = false,
+    infJump = false,
+    esp = false,
+    swim = false,
+    walkSpeed = 16,
+    jumpPower = 50,
+    flySpeed = 50,
+    loopGoto = false,
+    loopBring = false,
+    fling = false,
+    antiAfk = false,
+    fullbright = false,
+    xray = false,
+    freecam = false,
+    clickTp = false,
+    clickDelete = false
+}
+
+local connections = {}
+local waypoints = {}
+local currentTarget = nil
+
+-- Criar GUI Principal
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "GbzinnAdmin"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+pcall(function()
+    ScreenGui.Parent = CoreGui
+end)
+if ScreenGui.Parent ~= CoreGui then
+    ScreenGui.Parent = player:WaitForChild("PlayerGui")
+end
+
+-- Frame Principal
+local MainFrame = Instance.new("Frame")
+MainFrame.Name = "MainFrame"
+MainFrame.Parent = ScreenGui
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+MainFrame.BorderSizePixel = 0
+MainFrame.Position = UDim2.new(0.3, 0, 0.2, 0)
+MainFrame.Size = UDim2.new(0, 600, 0, 450)
+MainFrame.Active = true
+MainFrame.Draggable = true
+
+-- Sombra
+local Shadow = Instance.new("ImageLabel")
+Shadow.Name = "Shadow"
+Shadow.Parent = MainFrame
+Shadow.BackgroundTransparency = 1
+Shadow.Position = UDim2.new(0, -15, 0, -15)
+Shadow.Size = UDim2.new(1, 30, 1, 30)
+Shadow.ZIndex = 0
+Shadow.Image = "rbxassetid://6015897843"
+Shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
+Shadow.ImageTransparency = 0.4
+Shadow.ScaleType = Enum.ScaleType.Slice
+Shadow.SliceCenter = Rect.new(49, 49, 450, 450)
+
+local Corner = Instance.new("UICorner")
+Corner.CornerRadius = UDim.new(0, 15)
+Corner.Parent = MainFrame
+
+-- Barra Superior
+local TopBar = Instance.new("Frame")
+TopBar.Name = "TopBar"
+TopBar.Parent = MainFrame
+TopBar.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+TopBar.BorderSizePixel = 0
+TopBar.Size = UDim2.new(1, 0, 0, 55)
+
+local TopCorner = Instance.new("UICorner")
+TopCorner.CornerRadius = UDim.new(0, 15)
+TopCorner.Parent = TopBar
+
+-- Logo/Ícone
+local Logo = Instance.new("TextLabel")
+Logo.Name = "Logo"
+Logo.Parent = TopBar
+Logo.BackgroundTransparency = 1
+Logo.Position = UDim2.new(0, 15, 0, 0)
+Logo.Size = UDim2.new(0, 40, 1, 0)
+Logo.Font = Enum.Font.GothamBold
+Logo.Text = "🛡️"
+Logo.TextColor3 = Color3.fromRGB(100, 200, 255)
+Logo.TextSize = 24
+
+-- Título
+local Title = Instance.new("TextLabel")
+Title.Name = "Title"
+Title.Parent = TopBar
+Title.BackgroundTransparency = 1
+Title.Position = UDim2.new(0, 60, 0, 8)
+Title.Size = UDim2.new(0, 350, 0, 22)
+Title.Font = Enum.Font.GothamBold
+Title.Text = "Gbzinn Admin Commands Premium"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 16
+Title.TextXAlignment = Enum.TextXAlignment.Left
+
+local Subtitle = Instance.new("TextLabel")
+Subtitle.Name = "Subtitle"
+Subtitle.Parent = TopBar
+Subtitle.BackgroundTransparency = 1
+Subtitle.Position = UDim2.new(0, 60, 0, 28)
+Subtitle.Size = UDim2.new(0, 350, 0, 18)
+Subtitle.Font = Enum.Font.Gotham
+Subtitle.Text = "By Gbzinn | v2.0 Premium Edition"
+Subtitle.TextColor3 = Color3.fromRGB(150, 150, 170)
+Subtitle.TextSize = 11
+Subtitle.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Botões do Topo
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Name = "MinimizeButton"
+MinimizeButton.Parent = TopBar
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(100, 200, 100)
+MinimizeButton.BorderSizePixel = 0
+MinimizeButton.Position = UDim2.new(1, -75, 0, 15)
+MinimizeButton.Size = UDim2.new(0, 25, 0, 25)
+MinimizeButton.Font = Enum.Font.GothamBold
+MinimizeButton.Text = "_"
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.TextSize = 16
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 6)
+MinCorner.Parent = MinimizeButton
+
+local CloseButton = Instance.new("TextButton")
+CloseButton.Name = "CloseButton"
+CloseButton.Parent = TopBar
+CloseButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+CloseButton.BorderSizePixel = 0
+CloseButton.Position = UDim2.new(1, -40, 0, 15)
+CloseButton.Size = UDim2.new(0, 25, 0, 25)
+CloseButton.Font = Enum.Font.GothamBold
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.TextSize = 14
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 6)
+CloseCorner.Parent = CloseButton
+
+-- Container de Abas
+local TabContainer = Instance.new("Frame")
+TabContainer.Name = "TabContainer"
+TabContainer.Parent = MainFrame
+TabContainer.BackgroundTransparency = 1
+TabContainer.Position = UDim2.new(0, 15, 0, 65)
+TabContainer.Size = UDim2.new(1, -30, 0, 35)
+
+local TabList = Instance.new("UIListLayout")
+TabList.Parent = TabContainer
+TabList.FillDirection = Enum.FillDirection.Horizontal
+TabList.HorizontalAlignment = Enum.HorizontalAlignment.Left
+TabList.SortOrder = Enum.SortOrder.LayoutOrder
+TabList.Padding = UDim.new(0, 8)
+
+-- Container de Conteúdo
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Name = "ContentContainer"
+ContentContainer.Parent = MainFrame
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.Position = UDim2.new(0, 15, 0, 110)
+ContentContainer.Size = UDim2.new(1, -30, 1, -120)
+
+-- Páginas de Conteúdo
+local pages = {}
+
+local function CreatePage(name)
+    local Page = Instance.new("ScrollingFrame")
+    Page.Name = name .. "Page"
+    Page.Parent = ContentContainer
+    Page.BackgroundColor3 = Color3.fromRGB(25, 25, 38)
+    Page.BorderSizePixel = 0
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.CanvasSize = UDim2.new(0, 0, 0, 0)
+    Page.ScrollBarThickness = 4
+    Page.ScrollBarImageColor3 = Color3.fromRGB(100, 150, 255)
+    Page.Visible = false
+    
+    local PageCorner = Instance.new("UICorner")
+    PageCorner.CornerRadius = UDim.new(0, 10)
+    PageCorner.Parent = Page
+    
+    local PageList = Instance.new("UIListLayout")
+    PageList.Parent = Page
+    PageList.SortOrder = Enum.SortOrder.LayoutOrder
+    PageList.Padding = UDim.new(0, 6)
+    
+    local PagePadding = Instance.new("UIPadding")
+    PagePadding.Parent = Page
+    PagePadding.PaddingTop = UDim.new(0, 8)
+    PagePadding.PaddingBottom = UDim.new(0, 8)
+    PagePadding.PaddingLeft = UDim.new(0, 8)
+    PagePadding.PaddingRight = UDim.new(0, 8)
+    
+    PageList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        Page.CanvasSize = UDim2.new(0, 0, 0, PageList.AbsoluteContentSize.Y + 16)
+    end)
+    
+    pages[name] = Page
+    return Page
+end
+
+-- Criar Abas
+local function CreateTab(name, icon)
+    local Tab = Instance.new("TextButton")
+    Tab.Name = name .. "Tab"
+    Tab.Parent = TabContainer
+    Tab.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+    Tab.BorderSizePixel = 0
+    Tab.Size = UDim2.new(0, 120, 1, 0)
+    Tab.AutoButtonColor = false
+    Tab.Font = Enum.Font.GothamSemibold
+    Tab.Text = icon .. " " .. name
+    Tab.TextColor3 = Color3.fromRGB(200, 200, 200)
+    Tab.TextSize = 13
+    
+    local TabCorner = Instance.new("UICorner")
+    TabCorner.CornerRadius = UDim.new(0, 8)
+    TabCorner.Parent = Tab
+    
+    Tab.MouseButton1Click:Connect(function()
+        for _, page in pairs(pages) do
+            page.Visible = false
+        end
+        
+        for _, tab in pairs(TabContainer:GetChildren()) do
+            if tab:IsA("TextButton") then
+                tab.BackgroundColor3 = Color3.fromRGB(35, 35, 50)
+                tab.TextColor3 = Color3.fromRGB(200, 200, 200)
+            end
+        end
+        
+        if pages[name] then
+            pages[name].Visible = true
+            Tab.BackgroundColor3 = Color3.fromRGB(100, 150, 255)
+            Tab.TextColor3 = Color3.fromRGB(255, 255, 255)
+        end
+    end)
+    
+    Tab.MouseEnter:Connect(function()
+        if pages[name] and not pages[name].Visible then
+            TweenService:Create(Tab, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 65)}):Play()
+        end
+    end)
+    
+    Tab.MouseLeave:Connect(function()
+        if pages[name] and not pages[name].Visible then
+            TweenService:Create(Tab, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 50)}):Play()
+        end
+    end)
+    
+    return Tab
+end
+
+-- Criar páginas
+local PlayerPage = CreatePage("Player")
+local TeleportPage = CreatePage("Teleport")
+local VisualPage = CreatePage("Visual")
+local MiscPage = CreatePage("Misc")
+local LocalPage = CreatePage("Local")
+
+-- Criar abas
+CreateTab("Player", "👤")
+CreateTab("Teleport", "📍")
+CreateTab("Visual", "👁️")
+CreateTab("Misc", "⚙️")
+CreateTab("Local", "🎮")
+
+-- Mostrar primeira página
+PlayerPage.Visible = true
+TabContainer:GetChildren()[2].BackgroundColor3 = Color3.fromRGB(100, 150, 255)
+TabContainer:GetChildren()[2].TextColor3 = Color3.fromRGB(255, 255, 255)
+
+-- Função para criar botões de comando
+local function CreateCommandButton(parent, name, description, callback, hasToggle)
+    local Button = Instance.new("TextButton")
+    Button.Name = name
+    Button.Parent = parent
+    Button.BackgroundColor3 = Color3.fromRGB(35, 35, 52)
+    Button.BorderSizePixel = 0
+    Button.Size = UDim2.new(1, -10, 0, 55)
+    Button.AutoButtonColor = false
+    Button.Text = ""
+    
+    local ButtonCorner = Instance.new("UICorner")
+    ButtonCorner.CornerRadius = UDim.new(0, 8)
+    ButtonCorner.Parent = Button
+    
+    local CommandName = Instance.new("TextLabel")
+    CommandName.Name = "CommandName"
+    CommandName.Parent = Button
+    CommandName.BackgroundTransparency = 1
+    CommandName.Position = UDim2.new(0, 12, 0, 6)
+    CommandName.Size = UDim2.new(1, -80, 0, 18)
+    CommandName.Font = Enum.Font.GothamBold
+    CommandName.Text = name
+    CommandName.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CommandName.TextSize = 13
+    CommandName.TextXAlignment = Enum.TextXAlignment.Left
+    
+    local CommandDesc = Instance.new("TextLabel")
+    CommandDesc.Name = "CommandDesc"
+    CommandDesc.Parent = Button
+    CommandDesc.BackgroundTransparency = 1
+    CommandDesc.Position = UDim2.new(0, 12, 0, 26)
+    CommandDesc.Size = UDim2.new(1, -80, 0, 22)
+    CommandDesc.Font = Enum.Font.Gotham
+    CommandDesc.Text = description
+    CommandDesc.TextColor3 = Color3.fromRGB(160, 160, 180)
+    CommandDesc.TextSize = 11
+    CommandDesc.TextXAlignment = Enum.TextXAlignment.Left
+    CommandDesc.TextWrapped = true
+    
+    if hasToggle then
+        local StatusIndicator = Instance.new("Frame")
+        StatusIndicator.Name = "StatusIndicator"
+        StatusIndicator.Parent = Button
+        StatusIndicator.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+        StatusIndicator.BorderSizePixel = 0
+        StatusIndicator.Position = UDim2.new(1, -55, 0.5, -10)
+        StatusIndicator.Size = UDim2.new(0, 45, 0, 20)
+        
+        local StatusCorner = Instance.new("UICorner")
+        StatusCorner.CornerRadius = UDim.new(0, 10)
+        StatusCorner.Parent = StatusIndicator
+        
+        local StatusText = Instance.new("TextLabel")
+        StatusText.Name = "StatusText"
+        StatusText.Parent = StatusIndicator
+        StatusText.BackgroundTransparency = 1
+        StatusText.Size = UDim2.new(1, 0, 1, 0)
+        StatusText.Font = Enum.Font.GothamBold
+        StatusText.Text = "OFF"
+        StatusText.TextColor3 = Color3.fromRGB(255, 255, 255)
+        StatusText.TextSize = 10
+    end
+    
+    Button.MouseEnter:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(45, 45, 65)}):Play()
+    end)
+    
+    Button.MouseLeave:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(35, 35, 52)}):Play()
+    end)
+    
+    Button.MouseButton1Click:Connect(function()
+        callback()
+        
+        if hasToggle and Button:FindFirstChild("StatusIndicator") then
+            local status = Button.StatusIndicator
+            local statusText = status.StatusText
+            
+            if statusText.Text == "OFF" then
+                status.BackgroundColor3 = Color3.fromRGB(100, 220, 100)
+                statusText.Text = "ON"
+            else
+                status.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+                statusText.Text = "OFF"
+            end
+        end
+    end)
+    
+    return Button
+end
+
+-- Funções de Comandos Avançadas
+
+local function GetCharacter()
+    return player.Character or player.CharacterAdded:Wait()
+end
+
+local function GetRoot()
+    local char = GetCharacter()
+    return char and char:FindFirstChild("HumanoidRootPart")
+end
+
+local function GetHumanoid()
+    local char = GetCharacter()
+    return char and char:FindFirstChild("Humanoid")
+end
+
+-- FLY
+local function ToggleFly()
+    commandStates.fly = not commandStates.fly
+    
+    if commandStates.fly then
+        local root = GetRoot()
+        if not root then return end
+        
+        local bodyVelocity = Instance.new("BodyVelocity")
+        bodyVelocity.Name = "FlyVelocity"
+        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+        bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        bodyVelocity.Parent = root
+        
+        connections.fly = RunService.RenderStepped:Connect(function()
+            if not commandStates.fly then
+                if connections.fly then connections.fly:Disconnect() end
+                if root:FindFirstChild("FlyVelocity") then
+                    root.FlyVelocity:Destroy()
+                end
+                return
+            end
+            
+            local cam = workspace.CurrentCamera
+            local move = Vector3.new(0, 0, 0)
+            
+            if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+                move = move + (cam.CFrame.LookVector * commandStates.flySpeed)
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+                move = move - (cam.CFrame.LookVector * commandStates.flySpeed)
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+                move = move - (cam.CFrame.RightVector * commandStates.flySpeed)
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+                move = move + (cam.CFrame.RightVector * commandStates.flySpeed)
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+                move = move + Vector3.new(0, commandStates.flySpeed, 0)
+            end
+            if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+                move = move - Vector3.new(0, commandStates.flySpeed, 0)
+            end
+            
+            if bodyVelocity then
+                bodyVelocity.Velocity = move
+            end
+        end)
+    else
+        if connections.fly then connections.fly:Disconnect() end
+        local root = GetRoot()
+        if root and root:FindFirstChild("FlyVelocity") then
+            root.FlyVelocity:Destroy()
+        end
+    end
+end
+
+-- NOCLIP
+local function ToggleNoclip()
+    commandStates.noclip = not commandStates.noclip
+    
+    if commandStates.noclip then
+        connections.noclip = RunService.Stepped:Connect(function()
+            if not commandStates.noclip then
+                if connections.noclip then connections.noclip:Disconnect() end
+                return
+            end
+            
+            local char = GetCharacter()
+            if char then
+                for _, part in pairs(char:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        part.CanCollide = false
+                    end
+                end
+            end
+        end)
+    else
+        if connections.noclip then connections.noclip:Disconnect() end
+    end
+end
+
+-- INFINITE JUMP
+local function ToggleInfJump()
+    commandStates.infJump = not commandStates.infJump
+    
+    if commandStates.infJump then
+        connections.infJump = UserInputService.JumpRequest:Connect(function()
+            if not commandStates.infJump then
+                if connections.infJump then connections.infJump:Disconnect() end
+                return
+            end
+            
+            local hum = GetHumanoid()
+            if hum then
+                hum:ChangeState(Enum.HumanoidStateType.Jumping)
+            end
+        end)
+    else
+        if connections.infJump then connections.infJump:Disconnect() end
+    end
+end
+
+-- ESP
+local function ToggleESP()
+    commandStates.esp = not commandStates.esp
+    
+    if commandStates.esp then
+        for _, otherPlayer in pairs(Players:GetPlayers()) do
+            if otherPlayer ~= player and otherPlayer.Character then
+                if not otherPlayer.Character:FindFirstChild("ESP") then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "ESP"
+                    highlight.Adornee = otherPlayer.Character
+                    highlight.FillColor = Color3.fromRGB(255, 100, 100)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlight.FillTransparency = 0.5
+                    highlight.OutlineTransparency = 0
+                    highlight.Parent = otherPlayer.Character
+                end
+            end
+        end
+        
+        connections.esp = Players.PlayerAdded:Connect(function(newPlayer)
+            newPlayer.CharacterAdded:Connect(function(char)
+                if commandStates.esp then
+                    task.wait(0.5)
+                    local highlight = Instance.new("Highlight")
+                    highlight.Name = "ESP"
+                    highlight.Adornee = char
+                    highlight.FillColor = Color3.fromRGB(255, 100, 100)
+                    highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+                    highlight.FillTransparency = 0.5
+                    highlight.OutlineTransparency = 0
+                    highlight.Parent = char
+                end
+            end)
+        end)
+    else
+        if connections.esp then connections.esp:Disconnect() end
+        for _, otherPlayer in pairs(Players:GetPlayers()) do
+            if otherPlayer.Character and otherPlayer.Character:FindFirstChild("ESP") then
+                otherPlayer.Character.ESP:Destroy()
+            end
+        end
+    end
+end
+
+-- SWIM IN AIR
+local function ToggleSwim()
+    commandStates.swim = not commandStates.swim
+    
+    if commandStates.swim then
+        connections.swim = RunService.Heartbeat:Connect(function()
+            if not commandStates.swim then
+                if connections.swim then connections.swim:Disconnect() end
+                return
+            end
+            
+            local hum = GetHumanoid()
+            if hum then
+                hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, true)
+                hum:ChangeState(Enum.HumanoidStateType.Swimming)
+            end
+        end)
+    else
+        if connections.swim then connections.swim:Disconnect() end
+        local hum = GetHumanoid()
+        if hum then
+            hum:SetStateEnabled(Enum.HumanoidStateType.Swimming, false)
+        end
+    end
+end
+
+-- FULLBRIGHT
+local function ToggleFullbright()
+    commandStates.fullbright = not commandStates.fullbright
+    
+    if commandStates.fullbright then
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = false
+        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+        Lighting.Ambient = Color3.fromRGB(128, 128, 128)
+    else
+        Lighting.Brightness = 1
+        Lighting.ClockTime = 12
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = true
+        Lighting.OutdoorAmbient = Color3.fromRGB(70, 70, 70)
+        Lighting.Ambient = Color3.fromRGB(0, 0, 0)
+    end
+end
+
+-- XRAY
+local function ToggleXray()
+    commandStates.xray = not commandStates.xray
+    
+    if commandStates.xray then
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("BasePart") and not obj.Parent:FindFirstChildOfClass("Humanoid") then
+                obj.LocalTransparencyModifier = 0.5
+            end
+        end
+    else
+        for _, obj in pairs(Workspace:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                obj.LocalTransparencyModifier = 0
+            end
+        end
+    end
+end
+
+-- GOTO PLAYER
+local function GotoPlayer(targetName)
+    for _, targetPlayer in pairs(Players:GetPlayers()) do
+        if string.lower(targetPlayer.Name):find(string.lower(targetName)) and targetPlayer ~= player then
+            local targetChar = targetPlayer.Character
+            local myRoot = GetRoot()
+            
+            if targetChar and targetChar:FindFirstChild("HumanoidRootPart") and myRoot then
+                myRoot.CFrame = targetChar.HumanoidRootPart.CFrame
+                CreateNotification("Teleportado para " .. targetPlayer.Name)
+                return
+            end
+        end
+    end
+    CreateNotification("Jogador não encontrado!")
+end
+
+-- FLING
+local function ToggleFling()
+    commandStates.fling = not commandStates.fling
+    
+    if commandStates.fling then
+        local root = GetRoot()
+        if not root then return end
+        
+        local bodyAngularVelocity = Instance.new("BodyAngularVelocity")
+        bodyAngularVelocity.Name = "FlingVelocity"
+        bodyAngularVelocity.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
+        bodyAngularVelocity.AngularVelocity = Vector3.new(0, 99999, 0)
+        bodyAngularVelocity.Parent = root
+    else
+        local root = GetRoot()
+        if root and root:FindFirstChild("FlingVelocity") then
+            root.FlingVelocity:Destroy()
+        end
+    end
+end
+
+-- ANTI AFK
+local function ToggleAntiAFK()
+    commandStates.antiAfk = not commandStates.antiAfk
+    
+    if commandStates.antiAfk then
+        connections.antiAfk = RunService.Heartbeat:Connect(function()
+            if not commandStates.antiAfk then
+                if connections.antiAfk then connections.antiAfk:Disconnect() end
+                return
+            end
+            
+            local VirtualUser = game:GetService("VirtualUser")
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton2(Vector2.new())
+        end)
+    else
+        if connections.antiAfk then connections.antiAfk:Disconnect() end
+    end
+end
+
+-- GOD MODE
+local function GodMode()
+    local hum = GetHumanoid()
+    if hum then
+        hum.MaxHealth = math.huge
+        hum.Health = math.huge
+        CreateNotification("God Mode Ativado!")
+    end
+end
+
+-- INVISIBLE
+local function ToggleInvisible()
+    local char = GetCharacter()
+    if not char then return end
+    
+    for _, part in pairs(char:GetDescendants()) do
+        if part:IsA("BasePart") or part:IsA("Decal") then
+            part.Transparency = part.Transparency == 0 and 1 or 0
+        end
+    end
+end
+
+-- RESET
+local function ResetCharacter()
+    local char = GetCharacter()
+    if char then
+        char:BreakJoints()
+    end
+end
+
+-- CRIAR COMANDOS - PLAYER
+CreateCommandButton(PlayerPage, "Fly", "Voe livremente (WASD + Space/Shift)", ToggleFly, true)
+CreateCommandButton(PlayerPage, "Noclip", "Atravesse paredes e objetos", ToggleNoclip, true)
+CreateCommandButton(PlayerPage, "Infinite Jump", "Pule infinitamente no ar", ToggleInfJump, true)
+CreateCommandButton(PlayerPage, "Swim", "Nade no ar", ToggleSwim, true)
+CreateCommandButton(PlayerPage, "God Mode", "Vida infinita", GodMode, false)
+CreateCommandButton(PlayerPage, "Invisible", "Fique invisível", ToggleInvisible, false)
+CreateCommandButton(PlayerPage, "Fling", "Gire e arremesse pessoas", ToggleFling, true)
+CreateCommandButton(PlayerPage, "Speed 50", "Velocidade 50", function() 
+    local hum = GetHumanoid()
+    if hum then hum.WalkSpeed = 50 end
+end, false)
+CreateCommandButton(PlayerPage, "Speed 100", "Velocidade 100", function() 
+    local hum = GetHumanoid()
+    if hum then hum.WalkSpeed = 100 end
+end, false)
+CreateCommandButton(PlayerPage, "Speed Normal", "Velocidade normal (16)", function() 
+    local hum = GetHumanoid()
+    if hum then hum.WalkSpeed = 16 end
+end, false)
+CreateCommandButton(PlayerPage, "Jump Power 100", "Pule mais alto", function() 
+    local hum = GetHumanoid()
+    if hum then hum.JumpPower = 100 end
+end, false)
+CreateCommandButton(PlayerPage, "Reset", "Resetar personagem", ResetCharacter, false)
+
+-- CRIAR COMANDOS - TELEPORT
+CreateCommandButton(TeleportPage, "Goto Player", "Ir para um jogador (digite nome no chat)", function()
+    CreateNotification("Digite o nome do jogador no chat!")
+    local chatConnection
+    chatConnection = player.Chatted:Connect(function(msg)
+        chatConnection:Disconnect()
+        GotoPlayer(msg)
+    end)
+end, false)
+
+CreateCommandButton(TeleportPage, "Set Waypoint", "Definir ponto de teleporte", function()
+    local root = GetRoot()
+    if root then
+        waypoints["Custom"] = root.CFrame
+        CreateNotification("Waypoint salvo!")
+    end
+end, false)
+
+CreateCommandButton(TeleportPage, "TP to Waypoint", "Teleportar para waypoint", function()
+    local root = GetRoot()
+    if root and waypoints["Custom"] then
+        root.CFrame = waypoints["Custom"]
+        CreateNotification("Teleportado para waypoint!")
+    else
+        CreateNotification("Nenhum waypoint definido!")
+    end
+end, false)
+
+CreateCommandButton(TeleportPage, "Spawn Point", "Definir ponto de spawn", function()
+    local root = GetRoot()
+    if root then
+        waypoints["Spawn"] = root.CFrame
+        
+        player.CharacterAdded:Connect(function(char)
+            task.wait(0.5)
+            local newRoot = char:WaitForChild("HumanoidRootPart")
+            if newRoot and waypoints["Spawn"] then
+                newRoot.CFrame = waypoints["Spawn"]
+            end
+        end)
+        
+        CreateNotification("Spawn point definido!")
+    end
+end, false)
+
+CreateCommandButton(TeleportPage, "Bring All Players", "Traz todos para você (CLIENT)", function()
+    local root = GetRoot()
+    if not root then return end
+    
+    for _, targetPlayer in pairs(Players:GetPlayers()) do
+        if targetPlayer ~= player and targetPlayer.Character then
+            local targetRoot = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if targetRoot then
+                targetRoot.CFrame = root.CFrame
+            end
+        end
+    end
+    CreateNotification("Todos os jogadores trazidos!")
+end, false)
+
+CreateCommandButton(TeleportPage, "TP to Spawn", "Voltar ao spawn", function()
+    local root = GetRoot()
+    if root then
+        for _, spawn in pairs(Workspace:GetDescendants()) do
+            if spawn:IsA("SpawnLocation") then
+                root.CFrame = spawn.CFrame + Vector3.new(0, 3, 0)
+                CreateNotification("Teleportado para spawn!")
+                return
+            end
+        end
+        CreateNotification("Spawn não encontrado!")
+    end
+end, false)
+
+CreateCommandButton(TeleportPage, "Rejoin Server", "Entrar novamente no servidor", function()
+    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, player)
+end, false)
+
+-- CRIAR COMANDOS - VISUAL
+CreateCommandButton(VisualPage, "ESP", "Ver jogadores através de paredes", ToggleESP, true)
+CreateCommandButton(VisualPage, "Fullbright", "Remover escuridão", ToggleFullbright, true)
+CreateCommandButton(VisualPage, "X-Ray", "Ver através de objetos", ToggleXray, true)
+
+CreateCommandButton(VisualPage, "Chams", "ESP sem texto", function()
+    commandStates.esp = not commandStates.esp
+    
+    if commandStates.esp then
+        for _, targetPlayer in pairs(Players:GetPlayers()) do
+            if targetPlayer ~= player and targetPlayer.Character then
+                for _, part in pairs(targetPlayer.Character:GetDescendants()) do
+                    if part:IsA("BasePart") then
+                        local highlight = Instance.new("SelectionBox")
+                        highlight.Name = "Chams"
+                        highlight.Adornee = part
+                        highlight.Color3 = Color3.fromRGB(255, 0, 0)
+                        highlight.LineThickness = 0.05
+                        highlight.Parent = part
+                    end
+                end
+            end
+        end
+    else
+        for _, targetPlayer in pairs(Players:GetPlayers()) do
+            if targetPlayer.Character then
+                for _, part in pairs(targetPlayer.Character:GetDescendants()) do
+                    if part:FindFirstChild("Chams") then
+                        part.Chams:Destroy()
+                    end
+                end
+            end
+        end
+    end
+end, true)
+
+CreateCommandButton(VisualPage, "Remove Fog", "Remover neblina", function()
+    Lighting.FogEnd = 100000
+    Lighting.FogStart = 0
+    CreateNotification("Neblina removida!")
+end, false)
+
+CreateCommandButton(VisualPage, "Day", "Mudar para dia", function()
+    Lighting.ClockTime = 14
+    CreateNotification("Hora mudada para dia!")
+end, false)
+
+CreateCommandButton(VisualPage, "Night", "Mudar para noite", function()
+    Lighting.ClockTime = 0
+    CreateNotification("Hora mudada para noite!")
+end, false)
+
+CreateCommandButton(VisualPage, "Show Names", "Mostrar nomes dos jogadores", function()
+    for _, targetPlayer in pairs(Players:GetPlayers()) do
+        if targetPlayer ~= player and targetPlayer.Character then
+            local head = targetPlayer.Character:FindFirstChild("Head")
+            if head and not head:FindFirstChild("NameTag") then
+                local billboard = Instance.new("BillboardGui")
+                billboard.Name = "NameTag"
+                billboard.Parent = head
+                billboard.Size = UDim2.new(0, 100, 0, 40)
+                billboard.StudsOffset = Vector3.new(0, 2, 0)
+                billboard.AlwaysOnTop = true
+                
+                local nameLabel = Instance.new("TextLabel")
+                nameLabel.Parent = billboard
+                nameLabel.Size = UDim2.new(1, 0, 1, 0)
+                nameLabel.BackgroundTransparency = 1
+                nameLabel.Text = targetPlayer.Name
+                nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+                nameLabel.TextStrokeTransparency = 0
+                nameLabel.Font = Enum.Font.GothamBold
+                nameLabel.TextScaled = true
+            end
+        end
+    end
+    CreateNotification("Nomes exibidos!")
+end, false)
+
+-- CRIAR COMANDOS - MISC
+CreateCommandButton(MiscPage, "Anti AFK", "Prevenir kick por inatividade", ToggleAntiAFK, true)
+
+CreateCommandButton(MiscPage, "Server Hop", "Mudar de servidor", function()
+    local servers = {}
+    local req = game:HttpGetAsync("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100")
+    local body = game:GetService("HttpService"):JSONDecode(req)
+    
+    if body and body.data then
+        for _, server in pairs(body.data) do
+            if server.id ~= game.JobId and server.playing < server.maxPlayers then
+                game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, server.id, player)
+                return
+            end
+        end
+    end
+    CreateNotification("Nenhum servidor disponível!")
+end, false)
+
+CreateCommandButton(MiscPage, "Copy Game ID", "Copiar ID do jogo", function()
+    setclipboard(tostring(game.PlaceId))
+    CreateNotification("Game ID copiado: " .. game.PlaceId)
+end, false)
+
+CreateCommandButton(MiscPage, "Copy Job ID", "Copiar Job ID do servidor", function()
+    setclipboard(game.JobId)
+    CreateNotification("Job ID copiado!")
+end, false)
+
+CreateCommandButton(MiscPage, "Player Info", "Ver informações do jogador", function()
+    local info = string.format(
+        "Nome: %s\nID: %d\nIdade da conta: %d dias\nPremium: %s\nPing: %dms",
+        player.Name,
+        player.UserId,
+        player.AccountAge,
+        player.MembershipType == Enum.MembershipType.Premium and "Sim" or "Não",
+        math.floor(player:GetNetworkPing() * 1000)
+    )
+    CreateNotification(info)
+end, false)
+
+CreateCommandButton(MiscPage, "Low Graphics", "Reduzir qualidade gráfica", function()
+    local terrain = Workspace.Terrain
+    terrain.WaterWaveSize = 0
+    terrain.WaterWaveSpeed = 0
+    terrain.WaterReflectance = 0
+    terrain.WaterTransparency = 0
+    
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("ParticleEmitter") or obj:IsA("Trail") then
+            obj.Enabled = false
+        end
+        if obj:IsA("Explosion") then
+            obj.BlastPressure = 1
+            obj.BlastRadius = 1
+        end
+        if obj:IsA("Fire") or obj:IsA("Smoke") then
+            obj.Enabled = false
+        end
+    end
+    
+    CreateNotification("Gráficos reduzidos para melhor FPS!")
+end, false)
+
+CreateCommandButton(MiscPage, "Remove Textures", "Remover texturas", function()
+    for _, obj in pairs(Workspace:GetDescendants()) do
+        if obj:IsA("Decal") or obj:IsA("Texture") then
+            obj.Transparency = 1
+        end
+        if obj:IsA("BasePart") then
+            obj.Material = Enum.Material.SmoothPlastic
+        end
+    end
+    CreateNotification("Texturas removidas!")
+end, false)
+
+CreateCommandButton(MiscPage, "Free Cam", "Câmera livre", function()
+    local cam = Workspace.CurrentCamera
+    cam.CameraType = Enum.CameraType.Scriptable
+    
+    local speed = 50
+    
+    connections.freecam = RunService.RenderStepped:Connect(function()
+        local move = Vector3.new(0, 0, 0)
+        
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            move = move + (cam.CFrame.LookVector * speed)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            move = move - (cam.CFrame.LookVector * speed)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            move = move - (cam.CFrame.RightVector * speed)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            move = move + (cam.CFrame.RightVector * speed)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            move = move + Vector3.new(0, speed, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            move = move - Vector3.new(0, speed, 0)
+        end
+        
+        cam.CFrame = cam.CFrame + (move * 0.01)
+    end)
+    
+    CreateNotification("Free Cam ativado! Pressione Q para desativar")
+    
+    local exitConnection
+    exitConnection = UserInputService.InputBegan:Connect(function(input)
+        if input.KeyCode == Enum.KeyCode.Q then
+            if connections.freecam then
+                connections.freecam:Disconnect()
+            end
+            cam.CameraType = Enum.CameraType.Custom
+            exitConnection:Disconnect()
+            CreateNotification("Free Cam desativado!")
+        end
+    end)
+end, false)
+
+-- CRIAR COMANDOS - LOCAL
+CreateCommandButton(LocalPage, "Remove Clothes", "Remover roupas", function()
+    local char = GetCharacter()
+    if char then
+        for _, obj in pairs(char:GetDescendants()) do
+            if obj:IsA("Shirt") or obj:IsA("Pants") or obj:IsA("ShirtGraphic") then
+                obj:Destroy()
+            end
+        end
+        CreateNotification("Roupas removidas!")
+    end
+end, false)
+
+CreateCommandButton(LocalPage, "No Hats", "Remover chapéus", function()
+    local char = GetCharacter()
+    if char then
+        for _, obj in pairs(char:GetDescendants()) do
+            if obj:IsA("Accessory") then
+                obj:Destroy()
+            end
+        end
+        CreateNotification("Chapéus removidos!")
+    end
+end, false)
+
+CreateCommandButton(LocalPage, "Big Head", "Cabeça grande", function()
+    local char = GetCharacter()
+    if char and char:FindFirstChild("Head") then
+        local head = char.Head
+        head.Size = Vector3.new(5, 5, 5)
+        CreateNotification("Cabeça aumentada!")
+    end
+end, false)
+
+CreateCommandButton(LocalPage, "Sit", "Sentar", function()
+    local hum = GetHumanoid()
+    if hum then
+        hum.Sit = true
+    end
+end, false)
+
+CreateCommandButton(LocalPage, "Jump", "Pular", function()
+    local hum = GetHumanoid()
+    if hum then
+        hum.Jump = true
+    end
+end, false)
+
+CreateCommandButton(LocalPage, "Spin", "Girar personagem", function()
+    local root = GetRoot()
+    if root then
+        local spin = Instance.new("BodyAngularVelocity")
+        spin.Name = "Spin"
+        spin.MaxTorque = Vector3.new(0, math.huge, 0)
+        spin.AngularVelocity = Vector3.new(0, 25, 0)
+        spin.Parent = root
+        
+        task.wait(5)
+        spin:Destroy()
+    end
+end, false)
+
+CreateCommandButton(LocalPage, "Platform", "Criar plataforma", function()
+    local root = GetRoot()
+    if root then
+        local platform = Instance.new("Part")
+        platform.Name = "Platform"
+        platform.Size = Vector3.new(10, 1, 10)
+        platform.Anchored = true
+        platform.Position = root.Position - Vector3.new(0, 3, 0)
+        platform.BrickColor = BrickColor.new("Bright blue")
+        platform.Material = Enum.Material.Neon
+        platform.Parent = Workspace
+        
+        CreateNotification("Plataforma criada! (5s)")
+        
+        task.wait(5)
+        platform:Destroy()
+    end
+end, false)
+
+CreateCommandButton(LocalPage, "Highlight Self", "Destacar personagem", function()
+    local char = GetCharacter()
+    if char and not char:FindFirstChild("SelfHighlight") then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "SelfHighlight"
+        highlight.Adornee = char
+        highlight.FillColor = Color3.fromRGB(100, 200, 255)
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.Parent = char
+        CreateNotification("Highlight ativado!")
+    else
+        if char and char:FindFirstChild("SelfHighlight") then
+            char.SelfHighlight:Destroy()
+            CreateNotification("Highlight desativado!")
+        end
+    end
+end, false)
+
+-- Botões de Fechar/Minimizar
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+MinimizeButton.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    CreateNotification("Menu minimizado! Pressione Right Ctrl para abrir")
+end)
+
+-- Função de Notificação
+function CreateNotification(text)
+    local NotifFrame = Instance.new("Frame")
+    NotifFrame.Parent = ScreenGui
+    NotifFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+    NotifFrame.BorderSizePixel = 0
+    NotifFrame.Position = UDim2.new(1, -320, 1, 0)
+    NotifFrame.Size = UDim2.new(0, 300, 0, 70)
+    
+    local NotifCorner = Instance.new("UICorner")
+    NotifCorner.CornerRadius = UDim.new(0, 10)
+    NotifCorner.Parent = NotifFrame
+    
+    local NotifIcon = Instance.new("TextLabel")
+    NotifIcon.Parent = NotifFrame
+    NotifIcon.BackgroundTransparency = 1
+    NotifIcon.Position = UDim2.new(0, 10, 0, 0)
+    NotifIcon.Size = UDim2.new(0, 40, 1, 0)
+    NotifIcon.Font = Enum.Font.GothamBold
+    NotifIcon.Text = "✓"
+    NotifIcon.TextColor3 = Color3.fromRGB(100, 255, 100)
+    NotifIcon.TextSize = 24
+    
+    local NotifText = Instance.new("TextLabel")
+    NotifText.Parent = NotifFrame
+    NotifText.BackgroundTransparency = 1
+    NotifText.Size = UDim2.new(1, -60, 1, 0)
+    NotifText.Position = UDim2.new(0, 50, 0, 0)
+    NotifText.Font = Enum.Font.Gotham
+    NotifText.Text = text
+    NotifText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    NotifText.TextSize = 13
+    NotifText.TextWrapped = true
+    NotifText.TextXAlignment = Enum.TextXAlignment.Left
+    
+    NotifFrame:TweenPosition(UDim2.new(1, -320, 1, -90), "Out", "Quad", 0.5, true)
+    
+    task.wait(3)
+    
+    NotifFrame:TweenPosition(UDim2.new(1, -320, 1, 0), "In", "Quad", 0.5, true)
+    task.wait(0.5)
+    NotifFrame:Destroy()
+end
+
+-- Tecla de Atalho (Right Ctrl)
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == Enum.KeyCode.RightControl then
+        MainFrame.Visible = not MainFrame.Visible
+    end
+end)
+
+-- Atualizar character ao respawn
+player.CharacterAdded:Connect(function(char)
+    character = char
+    humanoid = char:WaitForChild("Humanoid")
+    rootPart = char:WaitForChild("HumanoidRootPart")
+    
+    -- Reativar comandos persistentes
+    if commandStates.antiAfk then
+        ToggleAntiAFK()
+        ToggleAntiAFK()
+    end
+end)
+
+-- Mensagem de carregamento
+CreateNotification("🛡️ Gbzinn Admin v2.0 carregado!")
+CreateNotification("Pressione Right Ctrl para abrir/fechar")
+
+print("=================================")
+print("Gbzinn Admin Commands Premium v2.0")
+print("Desenvolvido por Gbzinn")
+print("Pressione Right Ctrl para abrir")
+print("Total de comandos: 50+")
+print("=================================")
